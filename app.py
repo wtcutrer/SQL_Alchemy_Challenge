@@ -59,18 +59,18 @@ def stations():
                    
 @app.route("/api/v1.0/temperature")   
     #Return TOBS from last year and filter them down by msot active station         
-def temp_monthly():
-    # Calculate the year
-    prev_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+def temp():
 
     #create query
     results = session.query(Measurement.tobs).\
         filter(Measurement.station == 'USC00519281').\
-        filter(Measurement.date >= prev_year).all()
+        filter(Measurement.date >= "2016-08-23").all()
     temps = list(np.ravel(results))
     session.close()   
     return jsonify(temps)         
-                   
+ 
+ 
+#Create queries to grab min,max,avg temp data from either a range of years or a specific year                  
 @app.route("/api/v1.0/<start>")
 def start_date(start):
     start_date_results = session.query(func.avg(Measurement.tobs), func.max(Measurement.tobs),func.min(Measurement.tobs)).\
