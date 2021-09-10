@@ -25,19 +25,19 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return (f"Welcome<br/>"
+    return (f"Surfs Up, bro! Welcome to my SQLAlchemy Challenge API!<br/>"
             f"----------------------------------------------------<br/>"
-            f"Available Routes:<br/>"
+            f"Available Routes for you to explore!<br/>"
             f"----------------------------------------------------<br/>"
-            f"/api/v1.0/precipitaton -- Preceipitation data<br/>"
+            f"Precipation Data = /api/v1.0/precipitaton<br/>"
             f"----------------------------------------------------<br/>"
-            f"/api/v1.0/stations ------ Weather observation stations<br/>"
+            f" Weather Observation stations list = /api/v1.0/stations<br/>"
             f"----------------------------------------------------<br/>"
-            f"/api/v1.0/temperature --- Temperature data<br/>"
+            f"Temperature Data = /api/v1.0/temperature<br/>"
             f"----------------------------------------------------<br/>"
-            f"/api/v1.0/start---------- Datesearch (yyyy-mm-dd)--- Lists the minimum temperature, the average temperature, and the max temperature for date given.<br/>"
+            f"Lists the average, maximum, and minimum tobs for date given = /api/v1.0/<start>(yyyy-mm-dd)<br/>"
             f"----------------------------------------------------<br/>"
-            f"/api/v1.0/start/end-------Datesearch (yyyy-mm-dd/yyyy-mm-dd)-- Lists the minimum temperature, the average temperature, and the max temperature for date range given.<br/>")
+            f"Lists the average, maximum, and minimum tobs for date range given = /api/v1.0/<start>/<end>(yyyy-mm-dd/yyyy-mm-dd)<br/>")
 
 @app.route("/api/v1.0/precipitaton")
 def precipitation():
@@ -45,6 +45,8 @@ def precipitation():
     results = session.query(Measurement.date, Measurement.prcp).\
         filter(Measurement.date >= "2016-08-23").all()
     results_json = [results]
+    session.close()   
+    
     return jsonify(results_json)
 
 @app.route("/api/v1.0/stations")
@@ -52,6 +54,7 @@ def stations():
      #Return a list of the stations
     results = session.query(Station.name).all()
     stations_json = list(np.ravel(results))
+    session.close()   
     return jsonify(stations_json) 
                    
 @app.route("/api/v1.0/temperature")   
@@ -65,21 +68,39 @@ def temp_monthly():
         filter(Measurement.station == 'USC00519281').\
         filter(Measurement.date >= prev_year).all()
     temps = list(np.ravel(results))
+    session.close()   
     return jsonify(temps)         
                    
 @app.route("/api/v1.0/<start>")
 def start_date(start):
-    results = session.query(Measurement.date, func.avg(Measurement.tobs), func.max(Measurement.tobs),func.min(Measurement.tobs)).\
-        filter(Measurement.date >= start).all()               
-    start_json = list(np.ravel(results))
-    return jsonify(start_json)               
+    start_date_results = session.query(func.avg(Measurement.tobs), func.max(Measurement.tobs),func.min(Measurement.tobs)).\
+        filter(Measurement.date >= start).all()    
+    session.close()            
+      
+    start_data = []
+    for min, max, avg in start_date_results:
+        start_dict = {}
+        start_dict['MIN'] = min
+        start_dict['MAX'] = max
+        start_dict['AVG'] = avg
+        start_data.append(start_dict)
+    return jsonify(start_data)              
                    
 @app.route("/api/v1.0/<start>/<end>")
 def start_end(start, end):                   
-    results = session.query(func.avg(Measurement.tobs), func.max(Measurement.tobs), func.min(Measurement.tobs)).\
+    range_results = session.query(func.avg(Measurement.tobs), func.max(Measurement.tobs), func.min(Measurement.tobs)).\
         filter(Measurement.date >= start, Measurement.date <= end).all()
-    end_json = list(np.ravel(results))
-    return jsonify(end_json)
+    session.close()
+       
+    range_data = []
+    for min, max, avg in range_results:
+        start_end_dict = {}
+        start_end_dict['MIN'] = min
+        start_end_dict['MAX'] = max
+        start_end_dict['AVG'] = avg
+        range_data.append(start_end_dict)
+    return jsonify(range_data)
         
 if __name__ == '__main__':
     app.run(debug=True) 
+    
